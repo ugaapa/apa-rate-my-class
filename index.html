@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>APA Rate My Professor</title>
 
+<!-- Styles -->
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -22,7 +23,7 @@ header {
 
 .container {
     padding: 30px;
-    max-width: 800px;
+    max-width: 900px;
     margin: auto;
 }
 
@@ -30,7 +31,7 @@ button {
     background: #ff704d;
     color: white;
     border: none;
-    padding: 15px 25px;
+    padding: 12px 25px;
     margin: 10px;
     font-size: 16px;
     cursor: pointer;
@@ -41,7 +42,7 @@ button:hover {
     background: #ff5733;
 }
 
-input, textarea {
+input, textarea, select {
     width: 100%;
     padding: 12px;
     margin: 10px 0;
@@ -59,32 +60,38 @@ input, textarea {
     color: gold;
 }
 
-.review {
+.review-card {
     background: white;
-    padding: 15px;
-    margin: 10px 0;
+    padding: 15px 20px;
+    margin: 15px 0;
     border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
-.hidden {
-    display: none;
-}
-    select {
-    padding: 10px;
-    margin: 10px;
-    border-radius: 6px;
+.review-card h3 {
+    margin: 0;
 }
 
-.review h3 {
-    margin-bottom: 5px;
+.review-card .avg {
+    font-weight: bold;
+    margin: 5px 0 10px 0;
 }
 
-.review p {
-    margin: 8px 0;
+.hidden { display: none; }
+
+.search-sort {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.search-sort input, .search-sort select {
+    width: 180px;
+    display: inline-block;
+    margin: 0 5px;
 }
 </style>
-</head>
 
+</head>
 <body>
 
 <header>APA Rate My Professor</header>
@@ -99,11 +106,11 @@ input, textarea {
 
 <!-- FORM -->
 <div id="formPage" class="hidden">
-    <h2>Submit a Review</h2>
+    <h2 style="text-align:center;">Submit a Review</h2>
 
     <input id="professor" placeholder="Professor" required>
     <input id="class" placeholder="Class" required>
-    
+
     <label>When did you take this course?</label>
     <select id="semester" required>
         <option value="">Select semester</option>
@@ -142,7 +149,6 @@ input, textarea {
     </select>
 
     <textarea id="description" placeholder="Description of class" rows="5"></textarea>
-
     <textarea id="study" placeholder="How did you study for this class?" rows="3"></textarea>
 
     <button onclick="submitReview()">Submit</button>
@@ -153,65 +159,31 @@ input, textarea {
 <div id="reviewPage" class="hidden">
     <h2 style="text-align:center;">All Reviews</h2>
 
-    <div style="text-align:center; margin-bottom:20px;">
-        <input id="searchProfessor" placeholder="Search by Professor" style="width:200px;">
-        <input id="searchClass" placeholder="Search by Class" style="width:200px;">
-        
+    <div class="search-sort">
+        <input id="searchProfessor" placeholder="Search by Professor">
+        <input id="searchClass" placeholder="Search by Class">
         <select id="sortOption">
             <option value="default">Sort</option>
             <option value="rating">Highest Rated</option>
             <option value="difficulty">Easiest Classes</option>
         </select>
-
         <button onclick="loadReviews()">Apply</button>
     </div>
+
     <div id="reviews"></div>
     <button onclick="goHome()">Back</button>
 </div>
 
 </div>
 
-<script>
-// ⭐ RATING
-let selectedRating = 0;
-
-function setRating(rating) {
-    selectedRating = rating;
-    let stars = document.querySelectorAll(".stars span");
-    stars.forEach((star, index) => {
-        star.classList.toggle("active", index < rating);
-    });
-}
-
-// 🔥 NAVIGATION
-function showForm() {
-    document.getElementById("home").classList.add("hidden");
-    document.getElementById("formPage").classList.remove("hidden");
-}
-
-function showReviews() {
-    document.getElementById("home").classList.add("hidden");
-    document.getElementById("reviewPage").classList.remove("hidden");
-    loadReviews();
-}
-
-function goHome() {
-    document.getElementById("home").classList.remove("hidden");
-    document.getElementById("formPage").classList.add("hidden");
-    document.getElementById("reviewPage").classList.add("hidden");
-}
-
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
-
+<!-- Firebase + JS -->
 <script type="module">
-// Import Firebase (v10 modular syntax)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Config
+// Firebase config
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
+    apiKey: "AIzaSyBZ0cRX_TbTHNw70jE_H5hMzNtTm3mCScw",
     authDomain: "apa-rate-my-class.firebaseapp.com",
     projectId: "apa-rate-my-class"
 };
@@ -220,7 +192,35 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Submit review
+// GLOBAL variables
+let selectedRating = 0;
+
+// ⭐ Rating
+window.setRating = function (rating) {
+    selectedRating = rating;
+    let stars = document.querySelectorAll(".stars span");
+    stars.forEach((star, index) => {
+        star.classList.toggle("active", index < rating);
+    });
+};
+
+// 🔥 Navigation
+window.showForm = function() {
+    document.getElementById("home").classList.add("hidden");
+    document.getElementById("formPage").classList.remove("hidden");
+};
+window.showReviews = function() {
+    document.getElementById("home").classList.add("hidden");
+    document.getElementById("reviewPage").classList.remove("hidden");
+    loadReviews();
+};
+window.goHome = function() {
+    document.getElementById("home").classList.remove("hidden");
+    document.getElementById("formPage").classList.add("hidden");
+    document.getElementById("reviewPage").classList.add("hidden");
+};
+
+// 🔥 Submit Review
 window.submitReview = async function () {
     const professor = document.getElementById("professor").value;
     const className = document.getElementById("class").value;
@@ -244,15 +244,60 @@ window.submitReview = async function () {
             description,
             study
         });
-
         alert("Review submitted!");
-        location.reload();
-
-    } catch (error) {
-        console.error("Error:", error);
+        goHome();
+    } catch (err) {
+        console.error(err);
         alert("Error submitting review");
     }
 };
+
+// 🔥 Load & display reviews
+async function loadReviews() {
+    const container = document.getElementById("reviews");
+    container.innerHTML = "";
+
+    const profSearch = document.getElementById("searchProfessor").value.toLowerCase();
+    const classSearch = document.getElementById("searchClass").value.toLowerCase();
+    const sortOption = document.getElementById("sortOption").value;
+
+    const querySnapshot = await getDocs(collection(db, "reviews"));
+    let grouped = {};
+
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+
+        if ((profSearch && !data.professor.toLowerCase().includes(profSearch)) ||
+            (classSearch && !data.class.toLowerCase().includes(classSearch))) return;
+
+        if (!grouped[data.professor]) grouped[data.professor] = [];
+        grouped[data.professor].push(data);
+    });
+
+    // Convert grouped to array for sorting
+    let professors = [];
+    for (let prof in grouped) {
+        const reviews = grouped[prof];
+        const avgRating = reviews.reduce((a,b)=>a+b.rating,0)/reviews.length;
+        const avgDifficulty = reviews.reduce((a,b)=>a+b.difficulty,0)/reviews.length;
+        professors.push({name: prof, reviews, avgRating, avgDifficulty});
+    }
+
+    if (sortOption === "rating") professors.sort((a,b)=>b.avgRating - a.avgRating);
+    if (sortOption === "difficulty") professors.sort((a,b)=>a.avgDifficulty - b.avgDifficulty);
+
+    professors.forEach(prof => {
+        let block = `<div class="review-card">
+            <h3>${prof.name}</h3>
+            <div class="avg">⭐ Rating: ${prof.avgRating.toFixed(1)} | 📚 Difficulty: ${prof.avgDifficulty.toFixed(1)}</div>`;
+        prof.reviews.forEach(r => {
+            block += `<p><b>${r.class}</b> (${r.semester}) — ⭐ ${r.rating}, Difficulty: ${r.difficulty}<br>
+            ${r.description}<br><i>Study Method:</i> ${r.study}</p>`;
+        });
+        block += `</div>`;
+        container.innerHTML += block;
+    });
+}
 </script>
 
 </body>
