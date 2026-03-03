@@ -71,6 +71,19 @@ input, textarea {
 .hidden {
     display: none;
 }
+    select {
+    padding: 10px;
+    margin: 10px;
+    border-radius: 6px;
+}
+
+.review h3 {
+    margin-bottom: 5px;
+}
+
+.review p {
+    margin: 8px 0;
+}
 </style>
 </head>
 
@@ -121,7 +134,20 @@ input, textarea {
 
 <!-- REVIEWS -->
 <div id="reviewPage" class="hidden">
-    <h2>All Reviews</h2>
+    <h2 style="text-align:center;">All Reviews</h2>
+
+    <div style="text-align:center; margin-bottom:20px;">
+        <input id="searchProfessor" placeholder="Search by Professor" style="width:200px;">
+        <input id="searchClass" placeholder="Search by Class" style="width:200px;">
+        
+        <select id="sortOption">
+            <option value="default">Sort</option>
+            <option value="rating">Highest Rated</option>
+            <option value="difficulty">Easiest Classes</option>
+        </select>
+
+        <button onclick="loadReviews()">Apply</button>
+    </div>
     <div id="reviews"></div>
     <button onclick="goHome()">Back</button>
 </div>
@@ -202,28 +228,60 @@ function loadReviews() {
     const container = document.getElementById("reviews");
     container.innerHTML = "";
 
+    const profSearch = document.getElementById("searchProfessor").value.toLowerCase();
+    const classSearch = document.getElementById("searchClass").value.toLowerCase();
+    const sortOption = document.getElementById("sortOption").value;
+
     db.collection("reviews").get().then(snapshot => {
         let grouped = {};
 
         snapshot.forEach(doc => {
             let data = doc.data();
+
+            // FILTERING
+            if (
+                (profSearch && !data.professor.toLowerCase().includes(profSearch)) ||
+                (classSearch && !data.class.toLowerCase().includes(classSearch))
+            ) {
+                return;
+            }
+
             if (!grouped[data.professor]) {
                 grouped[data.professor] = [];
             }
             grouped[data.professor].push(data);
         });
 
+        let professors = [];
+
         for (let prof in grouped) {
             let reviews = grouped[prof];
 
             let avgRating = reviews.reduce((a, b) => a + b.rating, 0) / reviews.length;
-            let avgDifficulty = reviews.reduce((a, b) => a + b.difficulty, 0) / reviews.length;
+            let avgDifficulty = reviews.reduce((a, b) => a + (b.difficulty || 0), 0) / reviews.length;
 
+            professors.push({
+                name: prof,
+                reviews,
+                avgRating,
+                avgDifficulty
+            });
+        }
+
+        // SORTING
+        if (sortOption === "rating") {
+            professors.sort((a, b) => b.avgRating - a.avgRating);
+        } else if (sortOption === "difficulty") {
+            professors.sort((a, b) => a.avgDifficulty - b.avgDifficulty);
+        }
+
+        // DISPLAY
+        professors.forEach(prof => {
             let block = `<div class="review">
-                <h3>${prof}</h3>
-                <p>⭐ Rating: ${avgRating.toFixed(1)} | 📚 Difficulty: ${avgDifficulty.toFixed(1)}</p>`;
+                <h3>${prof.name}</h3>
+                <p>⭐ Rating: ${prof.avgRating.toFixed(1)} | 📚 Difficulty: ${prof.avgDifficulty.toFixed(1)}</p>`;
 
-            reviews.forEach(r => {
+            prof.reviews.forEach(r => {
                 block += `<p>
                     <b>${r.class}</b> — ⭐ ${r.rating}, Difficulty: ${r.difficulty}<br>
                     ${r.description}<br>
@@ -233,7 +291,7 @@ function loadReviews() {
 
             block += `</div>`;
             container.innerHTML += block;
-        }
+        });
     });
 }
 </script>
