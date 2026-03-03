@@ -105,6 +105,25 @@ input, textarea {
 
     <input id="professor" placeholder="Professor" required>
     <input id="class" placeholder="Class" required>
+    
+    <label>When did you take this course?</label>
+    <select id="semester" required>
+        <option value="">Select semester</option>
+        <option>Spring 2026</option>
+        <option>Fall 2025</option>
+        <option>Summer 2025</option>
+        <option>Spring 2025</option>
+        <option>Fall 2024</option>
+        <option>Summer 2024</option>
+        <option>Spring 2024</option>
+        <option>Fall 2023</option>
+        <option>Summer 2023</option>
+        <option>Spring 2023</option>
+        <option>Fall 2022</option>
+        <option>Summer 2022</option>
+        <option>Spring 2022</option>
+        <option>Fall 2021</option>
+    </select>
 
     <div class="stars" id="starContainer">
         <span onclick="setRating(1)">★</span>
@@ -201,11 +220,12 @@ const db = firebase.firestore();
 function submitReview() {
     const professor = document.getElementById("professor").value;
     const className = document.getElementById("class").value;
-    const description = document.getElementById("description").value;
+    const semester = document.getElementById("semester").value;
     const difficulty = document.getElementById("difficulty").value;
+    const description = document.getElementById("description").value;
     const study = document.getElementById("study").value;
 
-    if (!professor || !className || !description || !study || selectedRating === 0 || !difficulty) {
+    if (!professor || !className || !description || !study || selectedRating === 0 || !difficulty || !semester) {
         alert("All fields are required!");
         return;
     }
@@ -213,6 +233,7 @@ function submitReview() {
     db.collection("reviews").add({
         professor,
         class: className,
+        semester,
         rating: selectedRating,
         difficulty: Number(difficulty),
         description,
@@ -283,7 +304,7 @@ function loadReviews() {
 
             prof.reviews.forEach(r => {
                 block += `<p>
-                    <b>${r.class}</b> — ⭐ ${r.rating}, Difficulty: ${r.difficulty}<br>
+                   <b>${r.class}</b> (${r.semester}) — ⭐ ${r.rating}, Difficulty: ${r.difficulty}<br>
                     ${r.description}<br>
                     <i>Study Method:</i> ${r.study}
                 </p>`;
