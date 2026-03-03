@@ -101,7 +101,19 @@ input, textarea {
         <span onclick="setRating(5)">★</span>
     </div>
 
+    <label>Difficulty (1–5)</label>
+    <select id="difficulty" required>
+        <option value="">Select difficulty</option>
+        <option value="1">1 (Very Easy)</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5 (Very Hard)</option>
+    </select>
+
     <textarea id="description" placeholder="Description of class" rows="5"></textarea>
+
+    <textarea id="study" placeholder="How did you study for this class?" rows="3"></textarea>
 
     <button onclick="submitReview()">Submit</button>
     <button onclick="goHome()">Back</button>
@@ -164,8 +176,10 @@ function submitReview() {
     const professor = document.getElementById("professor").value;
     const className = document.getElementById("class").value;
     const description = document.getElementById("description").value;
+    const difficulty = document.getElementById("difficulty").value;
+    const study = document.getElementById("study").value;
 
-    if (!professor || !className || !description || selectedRating === 0) {
+    if (!professor || !className || !description || !study || selectedRating === 0 || !difficulty) {
         alert("All fields are required!");
         return;
     }
@@ -174,7 +188,9 @@ function submitReview() {
         professor,
         class: className,
         rating: selectedRating,
-        description
+        difficulty: Number(difficulty),
+        description,
+        study
     }).then(() => {
         alert("Review submitted!");
         goHome();
@@ -199,13 +215,20 @@ function loadReviews() {
 
         for (let prof in grouped) {
             let reviews = grouped[prof];
-            let avg = reviews.reduce((a, b) => a + b.rating, 0) / reviews.length;
+
+            let avgRating = reviews.reduce((a, b) => a + b.rating, 0) / reviews.length;
+            let avgDifficulty = reviews.reduce((a, b) => a + b.difficulty, 0) / reviews.length;
 
             let block = `<div class="review">
-                <h3>${prof} (⭐ ${avg.toFixed(1)})</h3>`;
+                <h3>${prof}</h3>
+                <p>⭐ Rating: ${avgRating.toFixed(1)} | 📚 Difficulty: ${avgDifficulty.toFixed(1)}</p>`;
 
             reviews.forEach(r => {
-                block += `<p><b>${r.class}</b> — ⭐ ${r.rating}<br>${r.description}</p>`;
+                block += `<p>
+                    <b>${r.class}</b> — ⭐ ${r.rating}, Difficulty: ${r.difficulty}<br>
+                    ${r.description}<br>
+                    <i>Study Method:</i> ${r.study}
+                </p>`;
             });
 
             block += `</div>`;
