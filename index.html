@@ -203,20 +203,20 @@ function goHome() {
     document.getElementById("reviewPage").classList.add("hidden");
 }
 
-// 🔥 FIREBASE CONFIG (YOU WILL REPLACE THIS)
+// 1. Firebase config
 const firebaseConfig = {
     apiKey: "AIzaSyBZ0cRX_TbTHNw70jE_H5hMzNtTm3mCScw",
     authDomain: "apa-rate-my-class.firebaseapp.com",
-    projectId: "apa-rate-my-class",
-    storageBucket: "apa-rate-my-class.firebasestorage.app",
-    messagingSenderId: "999110452955",
-    appId: "1:999110452955:web:1dcf2d9883a0b57186cefe"
-  };
+    projectId: "apa-rate-my-class"
+};
 
+// 2. Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+
+// 3. Initialize Firestore
 const db = firebase.firestore();
 
-// 📤 SUBMIT
+// 4. THEN your functions
 function submitReview() {
     const professor = document.getElementById("professor").value;
     const className = document.getElementById("class").value;
@@ -225,7 +225,7 @@ function submitReview() {
     const difficulty = document.getElementById("difficulty").value;
     const study = document.getElementById("study").value;
 
-    if (!professor || !className || !description || !study || selectedRating === 0 || !difficulty || !semester) {
+    if (!professor || !className || !semester || !description || !study || selectedRating === 0 || !difficulty) {
         alert("All fields are required!");
         return;
     }
