@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>APA Rate My Class</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: linear-gradient(to right, #fff5f0, #ffe0cc);
+}
+
+header {
+    background: linear-gradient(to right, #ff4d4d, #ff944d);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.container {
+    padding: 30px;
+    max-width: 800px;
+    margin: auto;
+}
+
+button {
+    background: #ff704d;
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    margin: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+button:hover {
+    background: #ff5733;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.stars span {
+    font-size: 30px;
+    cursor: pointer;
+    color: #ccc;
+}
+
+.stars span.active {
+    color: gold;
+}
+
+.review {
+    background: white;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+}
+
+.hidden {
+    display: none;
+}
+</style>
+</head>
+
+<body>
+
+<header>APA Rate My Class</header>
+
+<div class="container">
+
+<!-- HOME -->
+<div id="home">
+    <button onclick="showForm()">Submit a Review</button>
+    <button onclick="showReviews()">View Reviews</button>
+</div>
+
+<!-- FORM -->
+<div id="formPage" class="hidden">
+    <h2>Submit a Review</h2>
+
+    <input id="professor" placeholder="Professor" required>
+    <input id="class" placeholder="Class" required>
+
+    <div class="stars" id="starContainer">
+        <span onclick="setRating(1)">★</span>
+        <span onclick="setRating(2)">★</span>
+        <span onclick="setRating(3)">★</span>
+        <span onclick="setRating(4)">★</span>
+        <span onclick="setRating(5)">★</span>
+    </div>
+
+    <textarea id="description" placeholder="Description of class" rows="5"></textarea>
+
+    <button onclick="submitReview()">Submit</button>
+    <button onclick="goHome()">Back</button>
+</div>
+
+<!-- REVIEWS -->
+<div id="reviewPage" class="hidden">
+    <h2>All Reviews</h2>
+    <div id="reviews"></div>
+    <button onclick="goHome()">Back</button>
+</div>
+
+</div>
+
+<script>
+// ⭐ RATING
+let selectedRating = 0;
+
+function setRating(rating) {
+    selectedRating = rating;
+    let stars = document.querySelectorAll(".stars span");
+    stars.forEach((star, index) => {
+        star.classList.toggle("active", index < rating);
+    });
+}
+
+// 🔥 NAVIGATION
+function showForm() {
+    document.getElementById("home").classList.add("hidden");
+    document.getElementById("formPage").classList.remove("hidden");
+}
+
+function showReviews() {
+    document.getElementById("home").classList.add("hidden");
+    document.getElementById("reviewPage").classList.remove("hidden");
+    loadReviews();
+}
+
+function goHome() {
+    document.getElementById("home").classList.remove("hidden");
+    document.getElementById("formPage").classList.add("hidden");
+    document.getElementById("reviewPage").classList.add("hidden");
+}
+
+// 🔥 FIREBASE CONFIG (YOU WILL REPLACE THIS)
+const firebaseConfig = {
+    apiKey: "AIzaSyBZ0cRX_TbTHNw70jE_H5hMzNtTm3mCScw",
+    authDomain: "apa-rate-my-class.firebaseapp.com",
+    projectId: "apa-rate-my-class",
+    storageBucket: "apa-rate-my-class.firebasestorage.app",
+    messagingSenderId: "999110452955",
+    appId: "1:999110452955:web:1dcf2d9883a0b57186cefe"
+  };
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// 📤 SUBMIT
+function submitReview() {
+    const professor = document.getElementById("professor").value;
+    const className = document.getElementById("class").value;
+    const description = document.getElementById("description").value;
+
+    if (!professor || !className || !description || selectedRating === 0) {
+        alert("All fields are required!");
+        return;
+    }
+
+    db.collection("reviews").add({
+        professor,
+        class: className,
+        rating: selectedRating,
+        description
+    }).then(() => {
+        alert("Review submitted!");
+        goHome();
+    });
+}
+
+// 📊 LOAD REVIEWS + AVERAGES
+function loadReviews() {
+    const container = document.getElementById("reviews");
+    container.innerHTML = "";
+
+    db.collection("reviews").get().then(snapshot => {
+        let grouped = {};
+
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            if (!grouped[data.professor]) {
+                grouped[data.professor] = [];
+            }
+            grouped[data.professor].push(data);
+        });
+
+        for (let prof in grouped) {
+            let reviews = grouped[prof];
+            let avg = reviews.reduce((a, b) => a + b.rating, 0) / reviews.length;
+
+            let block = `<div class="review">
+                <h3>${prof} (⭐ ${avg.toFixed(1)})</h3>`;
+
+            reviews.forEach(r => {
+                block += `<p><b>${r.class}</b> — ⭐ ${r.rating}<br>${r.description}</p>`;
+            });
+
+            block += `</div>`;
+            container.innerHTML += block;
+        }
+    });
+}
+</script>
+
+</body>
+</html>
