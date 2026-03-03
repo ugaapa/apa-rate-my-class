@@ -203,20 +203,25 @@ function goHome() {
     document.getElementById("reviewPage").classList.add("hidden");
 }
 
-// 1. Firebase config
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+<script>
+// Firebase config
 const firebaseConfig = {
     apiKey: "AIzaSyBZ0cRX_TbTHNw70jE_H5hMzNtTm3mCScw",
     authDomain: "apa-rate-my-class.firebaseapp.com",
     projectId: "apa-rate-my-class"
 };
 
-// 2. Initialize Firebase
+// Initialize Firebase FIRST
 firebase.initializeApp(firebaseConfig);
-
-// 3. Initialize Firestore
 const db = firebase.firestore();
 
-// 4. THEN your functions
+// GLOBAL rating variable
+let selectedRating = 0;
+
+// Submit function
 function submitReview() {
     const professor = document.getElementById("professor").value;
     const className = document.getElementById("class").value;
@@ -240,79 +245,10 @@ function submitReview() {
         study
     }).then(() => {
         alert("Review submitted!");
-        goHome();
-    });
-}
-
-// 📊 LOAD REVIEWS + AVERAGES
-function loadReviews() {
-    const container = document.getElementById("reviews");
-    container.innerHTML = "";
-
-    const profSearch = document.getElementById("searchProfessor").value.toLowerCase();
-    const classSearch = document.getElementById("searchClass").value.toLowerCase();
-    const sortOption = document.getElementById("sortOption").value;
-
-    db.collection("reviews").get().then(snapshot => {
-        let grouped = {};
-
-        snapshot.forEach(doc => {
-            let data = doc.data();
-
-            // FILTERING
-            if (
-                (profSearch && !data.professor.toLowerCase().includes(profSearch)) ||
-                (classSearch && !data.class.toLowerCase().includes(classSearch))
-            ) {
-                return;
-            }
-
-            if (!grouped[data.professor]) {
-                grouped[data.professor] = [];
-            }
-            grouped[data.professor].push(data);
-        });
-
-        let professors = [];
-
-        for (let prof in grouped) {
-            let reviews = grouped[prof];
-
-            let avgRating = reviews.reduce((a, b) => a + b.rating, 0) / reviews.length;
-            let avgDifficulty = reviews.reduce((a, b) => a + (b.difficulty || 0), 0) / reviews.length;
-
-            professors.push({
-                name: prof,
-                reviews,
-                avgRating,
-                avgDifficulty
-            });
-        }
-
-        // SORTING
-        if (sortOption === "rating") {
-            professors.sort((a, b) => b.avgRating - a.avgRating);
-        } else if (sortOption === "difficulty") {
-            professors.sort((a, b) => a.avgDifficulty - b.avgDifficulty);
-        }
-
-        // DISPLAY
-        professors.forEach(prof => {
-            let block = `<div class="review">
-                <h3>${prof.name}</h3>
-                <p>⭐ Rating: ${prof.avgRating.toFixed(1)} | 📚 Difficulty: ${prof.avgDifficulty.toFixed(1)}</p>`;
-
-            prof.reviews.forEach(r => {
-                block += `<p>
-                   <b>${r.class}</b> (${r.semester}) — ⭐ ${r.rating}, Difficulty: ${r.difficulty}<br>
-                    ${r.description}<br>
-                    <i>Study Method:</i> ${r.study}
-                </p>`;
-            });
-
-            block += `</div>`;
-            container.innerHTML += block;
-        });
+        location.reload();
+    }).catch(error => {
+        console.error("Error:", error);
+        alert("Error submitting review");
     });
 }
 </script>
