@@ -50,6 +50,29 @@ input, textarea, select {
     border: 1px solid #ccc;
 }
 
+#suggestions {
+    position: absolute;
+    max-width: 400px;
+    z-index: 10;
+}
+
+.suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.suggestion-item:hover {
+    background: #ffe0cc;
+}
+
+#classPrefix {
+    width: 40%;
+}
+
+#classNumber {
+    width: 60%;
+}
+
 .stars span {
     font-size: 30px;
     cursor: pointer;
@@ -108,8 +131,39 @@ input, textarea, select {
 <div id="formPage" class="hidden">
     <h2 style="text-align:center;">Submit a Review</h2>
 
-    <input id="professor" placeholder="Professor (e.g. Richard Slatcher)" required>
-    <input id="class" placeholder="Class (e.g. PSYC3250)" required>
+    <label>Professor</label>
+        <input id="professor" placeholder="Start typing a name..." autocomplete="off" required>
+        <div id="suggestions" style="background:white; border:1px solid #ccc; border-radius:6px;"></div>
+    
+    <label>Class</label>
+
+    <div style="display:flex; gap:10px;">
+    <select id="classPrefix" required>
+        <option value="">Select</option>
+        <option>ARTI</option>
+        <option>ASTR</option>
+        <option>BIOL</option>
+        <option>CBIO</option>
+        <option>CHEM</option>
+        <option>CHFD</option>
+        <option>ECHD</option>
+        <option>ECOL</option>
+        <option>EPSY</option>
+        <option>GENE</option>
+        <option>GEOG</option>
+        <option>GEOL</option>
+        <option>HDFS</option>
+        <option>IHDD</option>
+        <option>KINS</option>
+        <option>PHIL</option>
+        <option>PSYC</option>
+        <option>PHYS</option>
+        <option>SOCI</option>
+        <option>SOWK</option>
+    </select>
+
+    <input id="classNumber" placeholder="e.g. 2350" required>
+    </div>
 
     <label>When did you take this course?</label>
     <select id="semester" required>
@@ -192,6 +246,49 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+    let professorList = [];
+
+async function loadProfessorNames() {
+    const snapshot = await getDocs(collection(db, "reviews"));
+    const names = new Set();
+
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.professor) names.add(data.professor);
+    });
+
+    professorList = Array.from(names);
+}
+
+loadProfessorNames();
+
+    const input = document.getElementById("professor");
+const suggestionsBox = document.getElementById("suggestions");
+
+input.addEventListener("input", () => {
+    const value = input.value.toLowerCase();
+    suggestionsBox.innerHTML = "";
+
+    if (!value) return;
+
+    const matches = professorList.filter(name =>
+        name.toLowerCase().includes(value)
+    );
+
+    matches.slice(0, 5).forEach(name => {
+        const div = document.createElement("div");
+        div.textContent = name;
+        div.classList.add("suggestion-item");
+
+        div.onclick = () => {
+            input.value = name;
+            suggestionsBox.innerHTML = "";
+        };
+
+        suggestionsBox.appendChild(div);
+    });
+});
+
 // GLOBAL variables
 let selectedRating = 0;
 
@@ -223,15 +320,15 @@ window.goHome = function() {
 // 🔥 Submit Review
 window.submitReview = async function () {
     const professor = document.getElementById("professor").value;
-    const className = document.getElementById("class").value;
+    const classPrefix = document.getElementById("classPrefix").value;
+    const classNumber = document.getElementById("classNumber").value;
+    const className = classPrefix + classNumber;
     const semester = document.getElementById("semester").value;
     const description = document.getElementById("description").value;
     const difficulty = document.getElementById("difficulty").value;
     const study = document.getElementById("study").value;
 
-    if (!professor || !className || !semester || !description || !study || selectedRating === 0 || !difficulty) {
-        alert("All fields are required!");
-        return;
+    if (!professor || !classPrefix || !classNumber || !semester || !description || !study || selectedRating === 0 || !difficulty) {
     }
 
     try {
@@ -298,6 +395,7 @@ async function loadReviews() {
         container.innerHTML += block;
     });
 }
+    
 </script>
 
 </body>
