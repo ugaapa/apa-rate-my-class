@@ -359,6 +359,7 @@ async function loadReviews() {
     const sortOption = document.getElementById("sortOption").value;
 
     const querySnapshot = await getDocs(collection(db, "reviews"));
+
     let grouped = {};
 
     querySnapshot.forEach(doc => {
@@ -371,28 +372,52 @@ async function loadReviews() {
         grouped[data.professor].push(data);
     });
 
-    // Convert grouped to array for sorting
-    let professors = [];
-    for (let prof in grouped) {
+    // Convert to array
+    let professors = Object.keys(grouped).map(prof => {
         const reviews = grouped[prof];
-        const avgRating = reviews.reduce((a,b)=>a+b.rating,0)/reviews.length;
-        const avgDifficulty = reviews.reduce((a,b)=>a+b.difficulty,0)/reviews.length;
-        professors.push({name: prof, reviews, avgRating, avgDifficulty});
+
+        const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+        const avgDifficulty = reviews.reduce((sum, r) => sum + r.difficulty, 0) / reviews.length;
+
+        return {
+            name: prof,
+            reviews,
+            avgRating,
+            avgDifficulty
+        };
+    });
+
+    // 🔥 SORTING (fixed)
+    if (sortOption === "rating") {
+        professors.sort((a, b) => b.avgRating - a.avgRating);
+    } else if (sortOption === "difficulty") {
+        professors.sort((a, b) => a.avgDifficulty - b.avgDifficulty);
     }
 
-    if (sortOption === "rating") professors.sort((a,b)=>b.avgRating - a.avgRating);
-    if (sortOption === "difficulty") professors.sort((a,b)=>a.avgDifficulty - b.avgDifficulty);
-
+    // 🔥 DISPLAY (rebuild cleanly)
     professors.forEach(prof => {
-        let block = `<div class="review-card">
+        const card = document.createElement("div");
+        card.className = "review-card";
+
+        let html = `
             <h3>${prof.name}</h3>
-            <div class="avg">⭐ Rating: ${prof.avgRating.toFixed(1)} | 📚 Difficulty: ${prof.avgDifficulty.toFixed(1)}</div>`;
+            <div class="avg">
+                ⭐ ${prof.avgRating.toFixed(1)} | 📚 ${prof.avgDifficulty.toFixed(1)}
+            </div>
+        `;
+
         prof.reviews.forEach(r => {
-            block += `<p><b>${r.class}</b> (${r.semester}) — ⭐ ${r.rating}, Difficulty: ${r.difficulty}<br>
-            ${r.description}<br><i>Study Method:</i> ${r.study}</p>`;
+            html += `
+                <p>
+                    <b>${r.class}</b> (${r.semester}) — ⭐ ${r.rating}, Difficulty: ${r.difficulty}<br>
+                    ${r.description}<br>
+                    <i>Study:</i> ${r.study}
+                </p>
+            `;
         });
-        block += `</div>`;
-        container.innerHTML += block;
+
+        card.innerHTML = html;
+        container.appendChild(card);
     });
 }
     
